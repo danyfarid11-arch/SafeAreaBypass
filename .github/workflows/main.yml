@@ -7,8 +7,8 @@ jobs:
       - name: Compile Dylib
         run: |
           SDK=$(xcrun --sdk iphoneos --show-sdk-path)
-          printf '#import <UIKit/UIKit.h>\n#import <objc/runtime.h>\nstatic UIEdgeInsets z(id s, SEL u){return UIEdgeInsetsZero;}\n_attribute_((constructor)) static void i(void){Method m=class_getInstanceMethod([UIView class],@selector(safeAreaInsets));if(m){method_setImplementation(m,(IMP)z);}}\n' > t.m
-          clang -arch arm64 -isysroot "$SDK" -dynamiclib -fobjc-arc -framework UIKit -miphoneos-version-min=14.0 t.m -o SafeAreaBypass.dylib
+          printf '#import <UIKit/UIKit.h>\n#import <objc/runtime.h>\nstatic UIEdgeInsets z(id s, SEL u){return (UIEdgeInsets){0,0,0,0};}\n_attribute_((constructor)) static void i(void){Method m=class_getInstanceMethod([UIView class],@selector(safeAreaInsets));if(m){method_setImplementation(m,(IMP)z);}}\n' > t.m
+          clang -target arm64-apple-ios14.0 -isysroot "$SDK" -dynamiclib -fobjc-arc -framework UIKit t.m -o SafeAreaBypass.dylib
           codesign -f -s - SafeAreaBypass.dylib
       - uses: actions/upload-artifact@v4
         with:
