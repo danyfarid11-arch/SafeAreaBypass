@@ -23,7 +23,7 @@ jobs:
           }
           EOF
           xcrun -sdk iphoneos clang -arch arm64 -dynamiclib -fobjc-arc -framework UIKit -framework Foundation -miphoneos-version-min=14.0 tweak.m -o SafeAreaBypass.dylib
-          ldid -S SafeAreaBypass.dylib || codesign -f -s - SafeAreaBypass.dylib
+          codesign -f -s - SafeAreaBypass.dylib
       - uses: actions/upload-artifact@v4
         with:
           name: SafeAreaBypass-dylib
