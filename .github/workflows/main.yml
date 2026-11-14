@@ -2,17 +2,29 @@ name: Build
 on: [push, workflow_dispatch]
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
-      - uses: theos/setup-theos@v2
-      - name: Create & Build Tweak
+      - name: Compile SafeAreaBypass.dylib
         run: |
-          mkdir -p SafeAreaBypass && cd SafeAreaBypass
-          printf '#import <UIKit/UIKit.h>\n%%hook UIView\n- (UIEdgeInsets)safeAreaInsets { return UIEdgeInsetsZero; }\n%%end\n' > Tweak.x
-          printf 'TARGET := iphone:clang:latest:14.0\nARCHS = arm64\ninclude $(THEOS)/makefiles/common.mk\nTWEAK_NAME = SafeAreaBypass\nSafeAreaBypass_FILES = Tweak.x\nSafeAreaBypass_CFLAGS = -fobjc-arc\ninclude $(THEOS_MAKE_PATH)/tweak.mk\n' > Makefile
-          printf 'Package: com.custom.safeareabypass\nName: SafeAreaBypass\nVersion: 1.0.0\nArchitecture: iphoneos-arm64\nDescription: Bypass Safe Area\nMaintainer: Custom\nAuthor: Custom\nSection: Tweaks\n' > control
-          make
+          cat << 'EOF' > tweak.m
+          #import <UIKit/UIKit.h>
+          #import <objc/runtime.h>
+
+          static UIEdgeInsets zero_insets(id self, SEL _cmd) {
+              return UIEdgeInsetsZero;
+          }
+
+          _attribute_((constructor))
+          static void init_tweak(void) {
+              Method m = class_getInstanceMethod([UIView class], @selector(safeAreaInsets));
+              if (m) {
+                  method_setImplementation(m, (IMP)zero_insets);
+              }
+          }
+          EOF
+          xcrun -sdk iphoneos clang -arch arm64 -dynamiclib -fobjc-arc -framework UIKit -framework Foundation -miphoneos-version-min=14.0 tweak.m -o SafeAreaBypass.dylib
+          ldid -S SafeAreaBypass.dylib || codesign -f -s - SafeAreaBypass.dylib
       - uses: actions/upload-artifact@v4
         with:
           name: SafeAreaBypass-dylib
-          path: SafeAreaBypass/.theos/obj/debug/SafeAreaBypass.dylib
+          path: SafeAreaBypass.dylib
