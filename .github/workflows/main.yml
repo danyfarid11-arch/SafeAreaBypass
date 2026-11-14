@@ -5,8 +5,14 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - run: git clone --recursive https://github.com ~/theos
-      - run: THEOS=~/theos make
+      - name: Install Theos
+        run: |
+          rm -rf ~/theos
+          git clone --recursive https://github.com ~/theos
+      - name: Fix Makefile & Build
+        run: |
+          printf 'TARGET := iphone:clang:latest:14.0\nARCHS = arm64\ninclude $(THEOS)/makefiles/common.mk\nTWEAK_NAME = SafeAreaBypass\nSafeAreaBypass_FILES = Tweak.x\nSafeAreaBypass_CFLAGS = -fobjc-arc\ninclude $(THEOS_MAKE_PATH)/tweak.mk\n' > Makefile
+          THEOS=~/theos make
       - uses: actions/upload-artifact@v4
         with:
           name: SafeAreaBypass-dylib
