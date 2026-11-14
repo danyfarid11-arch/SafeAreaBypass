@@ -4,16 +4,20 @@ jobs:
   build:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Install Theos
+      - name: Setup Theos & SDK
         run: |
           rm -rf ~/theos
           git clone --recursive https://github.com ~/theos
-      - name: Fix Makefile & Build
+          mkdir -p ~/theos/sdks
+          curl -L https://github.com | tar -xJ -C ~/theos/sdks
+      - name: Create & Build Tweak
         run: |
-          printf 'TARGET := iphone:clang:latest:14.0\nARCHS = arm64\ninclude $(THEOS)/makefiles/common.mk\nTWEAK_NAME = SafeAreaBypass\nSafeAreaBypass_FILES = Tweak.x\nSafeAreaBypass_CFLAGS = -fobjc-arc\ninclude $(THEOS_MAKE_PATH)/tweak.mk\n' > Makefile
+          mkdir -p SafeAreaBypass && cd SafeAreaBypass
+          printf '#import <UIKit/UIKit.h>\n%%hook UIView\n- (UIEdgeInsets)safeAreaInsets { return UIEdgeInsetsZero; }\n%%end\n' > Tweak.x
+          printf 'TARGET := iphone:clang:16.5:14.0\nARCHS = arm64\ninclude $(THEOS)/makefiles/common.mk\nTWEAK_NAME = SafeAreaBypass\nSafeAreaBypass_FILES = Tweak.x\nSafeAreaBypass_CFLAGS = -fobjc-arc\ninclude $(THEOS_MAKE_PATH)/tweak.mk\n' > Makefile
+          printf 'Package: com.custom.safeareabypass\nName: SafeAreaBypass\nVersion: 1.0.0\nArchitecture: iphoneos-arm64\nDescription: Bypass Safe Area\nMaintainer: Custom\nAuthor: Custom\nSection: Tweaks\n' > control
           THEOS=~/theos make
       - uses: actions/upload-artifact@v4
         with:
           name: SafeAreaBypass-dylib
-          path: .theos/obj/debug/SafeAreaBypass.dylib
+          path: SafeAreaBypass/.theos/obj/debug/SafeAreaBypass.dylib
