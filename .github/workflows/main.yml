@@ -4,25 +4,11 @@ jobs:
   build:
     runs-on: macos-latest
     steps:
-      - name: Compile SafeAreaBypass.dylib
+      - name: Compile Dylib
         run: |
-          cat << 'EOF' > tweak.m
-          #import <UIKit/UIKit.h>
-          #import <objc/runtime.h>
-
-          static UIEdgeInsets zero_insets(id self, SEL _cmd) {
-              return UIEdgeInsetsZero;
-          }
-
-          _attribute_((constructor))
-          static void init_tweak(void) {
-              Method m = class_getInstanceMethod([UIView class], @selector(safeAreaInsets));
-              if (m) {
-                  method_setImplementation(m, (IMP)zero_insets);
-              }
-          }
-          EOF
-          xcrun -sdk iphoneos clang -arch arm64 -dynamiclib -fobjc-arc -framework UIKit -framework Foundation -miphoneos-version-min=14.0 tweak.m -o SafeAreaBypass.dylib
+          echo "I2ltcG9ydCA8VUlLaXQvVUlLaXQuaD4KI2ltcG9ydCA8b2JqYy9ydW50aW1lLmg+CnN0YXRpYyBVSUVkZ2VJbnNldHMgeihpZCBzLCBTRUwgdSl7cmV0dXJuIFVJRXNnZUluc2V0c1plcm87fQpYX2F0dHJpYnV0ZV9fKChjb25zdHJ1Y3RvcikpIHN0YXRpYyB2b2lkIGkoKXtNZXRob2QgbT1jbGFzc19nZXRJbnN0YW5jZU1ldGhvZChbVUlWaWV3IGNsYXNzXSxAc2VsZWN0b3Ioc2FmZUFyZWFJbnNldHMpKTtpZihtKW1ldGhvZF9zZXRJbXBsZW1lbnRhdGlvbihtLChJTVApMSk7fQo=" | base64 -d > t.m
+          printf '#import <UIKit/UIKit.h>\n#import <objc/runtime.h>\nstatic UIEdgeInsets z(id s, SEL u){return UIEdgeInsetsZero;}\n_attribute_((constructor)) static void i(void){Method m=class_getInstanceMethod([UIView class],@selector(safeAreaInsets));if(m){method_setImplementation(m,(IMP)z);}}\n' > t.m
+          xcrun -sdk iphoneos clang -arch arm64 -dynamiclib -fobjc-arc -framework UIKit -miphoneos-version-min=14.0 t.m -o SafeAreaBypass.dylib
           codesign -f -s - SafeAreaBypass.dylib
       - uses: actions/upload-artifact@v4
         with:
