@@ -1,0 +1,8 @@
+Package: com.custom.safeareabypass 
+Name: SafeAreaBypass 
+Version: 1.0.0 
+Architecture: iphoneos-arm64 
+Description: Bypass Safe Area 
+Maintainer: Custom 
+Author: Custom 
+Section: Tweaks
